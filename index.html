@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Haunted Lab · Agentic AI @ Edge</title>
+<meta name="description" content="An interactive Halloween game about energy-aware LLMs on edge hardware, built on measured GAMING benchmark data.">
+<meta name="theme-color" content="#050e09">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050e09'/%3E%3Cpath d='M16 56V30a16 16 0 0 1 32 0v26l-5.3-4.5-5.4 4.5-5.3-4.5-5.3 4.5-5.4-4.5z' fill='none' stroke='%237cf0aa' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050e09; --bg-2:#08140e; --card:#0a1a12; --card-2:#0e2419; --line:#1b3727; --line-2:#2a5139;
+  --mint:#7cf0aa; --mint-2:#56d18c; --mint-glow:rgba(124,240,170,.5);
+  --ink:#ecf8f0; --ink-2:#b1d3bf; --ink-3:#77a08a;
+  --red:#ff6b6b; --red-glow:rgba(255,107,107,.5); --amber:#ffc35c; --sky:#82c8ff;
+  --dark:#04120a;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font-size:clamp(14px,calc(.55vw + .45vh + 6px),20px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;min-height:100dvh;background-color:var(--bg);color:var(--ink);
+  font-family:var(--mono);line-height:1.5;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse at 50% 0%,rgba(124,240,170,.07),transparent 60%),
+    linear-gradient(rgba(124,240,170,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,240,170,.045) 1px,transparent 1px);
+  background-size:100% 100%,1.6rem 1.6rem,1.6rem 1.6rem;
+  background-attachment:fixed;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);opacity:.4}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:59;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5))}
+::selection{background:var(--mint);color:var(--dark)}
+:focus-visible{outline:3px dashed var(--amber);outline-offset:3px}
+
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:1rem;
+  padding:.6rem clamp(16px,3vw,48px);background:rgba(5,14,9,.88);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.brand{font:inherit;font-weight:800;color:var(--mint);background:none;border:0;padding:.3rem 0;cursor:pointer;white-space:nowrap;min-height:36px}
+.brand .dim{color:var(--ink-3);font-weight:500}
+.spacer{flex:1}
+.hud{display:flex;align-items:center;gap:.9rem;font-size:.85rem;color:var(--ink-2)}
+.hud b{color:var(--mint);font-size:1.05rem;font-variant-numeric:tabular-nums}
+.nights{display:flex;gap:.3rem}
+.nights i{width:1rem;height:1rem;border:2px solid var(--line-2);border-radius:3px;display:block}
+.nights i.cur{border-color:var(--mint);box-shadow:0 0 8px var(--mint-glow)}
+.nights i.ok{background:var(--mint);border-color:var(--mint)}
+.nights i.bad{background:var(--red);border-color:var(--red)}
+.tools{display:flex;gap:.4rem}
+.tbtn{font:inherit;font-size:.75rem;color:var(--ink-3);background:none;border:1px solid var(--line-2);border-radius:5px;padding:.3rem .6rem;cursor:pointer;min-height:36px;white-space:nowrap}
+.tbtn:hover{color:var(--mint);border-color:var(--mint-2)}
+@media (max-width:640px){
+  .brand .dim,.tbtn .lbl,.hud .nlabel,.hud .slbl,#btnFull{display:none}
+  body:not([data-screen="title"]):not([data-screen="end"]) .brand .nm{display:none}
+  .brand{min-width:36px}
+  .bar,.hud{gap:.6rem}
+}
+
+main{max-width:1440px;margin:0 auto;padding:clamp(16px,2.4vw,40px) clamp(16px,3vw,48px) 3.5rem}
+.screen{animation:fade .35s ease both}
+
+/* ---------- type ---------- */
+.cmd{color:var(--mint);font-size:1.1rem;margin:0 0 .9rem;min-height:1.5em}
+.caret{animation:blink 1s steps(1) infinite}
+h1{font-weight:800;line-height:1.02;letter-spacing:.01em;margin:0 0 1.1rem;font-size:clamp(2.1rem,5.4vw,5.4rem)}
+.g{color:var(--mint);text-shadow:0 0 24px var(--mint-glow)}
+.w{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.3)}
+.lede{font-size:1.1rem;color:var(--ink-2);max-width:64ch;margin:0 0 1.8rem}
+
+/* ---------- cards ---------- */
+.card{border:2px solid var(--mint);border-radius:10px;background:var(--card);
+  box-shadow:0 0 0 1px rgba(124,240,170,.06),0 0 28px rgba(124,240,170,.15);
+  overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card-h{display:flex;justify-content:space-between;gap:1rem;background:var(--mint);color:var(--dark);
+  font-weight:800;padding:.5rem 1rem;letter-spacing:.03em;font-size:.88rem}
+.card-h span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.card-b{padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:.8rem;flex:1;min-width:0}
+.card.bad{border-color:var(--red);box-shadow:0 0 28px rgba(255,107,107,.2)}
+.card.bad .card-h{background:var(--red)}
+.status{color:var(--red);font-size:.85rem;letter-spacing:.06em;display:flex;align-items:center;gap:.5em;margin:auto 0 0}
+.status::before{content:"";width:.6em;height:.6em;border-radius:50%;background:currentColor;flex:none;box-shadow:0 0 8px currentColor}
+.status.ok{color:var(--mint)}
+
+.ico{width:4rem;height:4rem;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+  color:var(--mint);filter:drop-shadow(0 0 8px var(--mint-glow));flex:none;overflow:visible}
+.ico-sm{width:1.5em;height:1.5em;stroke-width:4.5;filter:none;color:inherit}
+
+/* ---------- buttons ---------- */
+.btn{font:inherit;font-weight:800;font-size:1rem;letter-spacing:.04em;display:inline-flex;align-items:center;justify-content:center;gap:.65em;
+  padding:.75em 1.25em;min-height:48px;border-radius:8px;border:2px solid var(--mint);background:transparent;color:var(--mint);
+  cursor:pointer;text-decoration:none;touch-action:manipulation;transition:transform .12s,box-shadow .12s,background .12s}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 20px var(--mint-glow)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn.primary{background:var(--mint);color:var(--dark);box-shadow:0 0 22px rgba(124,240,170,.35)}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+kbd{font:inherit;font-size:.68em;font-weight:700;border:1.5px solid currentColor;border-radius:4px;padding:.05em .4em;opacity:.7}
+@media (hover:none){kbd,.step span{display:none}}
+.actions{display:flex;flex-wrap:wrap;gap:.9rem;align-items:center}
+
+/* ---------- title ---------- */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.6vw,28px);margin-bottom:1.8rem}
+.trio .card-b{gap:.6rem}
+.trio h3{margin:.2rem 0 0;font-size:1.2rem}
+.trio p:not(.status){margin:0;color:var(--ink-2);font-size:.92rem}
+.trio .ico{animation:float 3s ease-in-out infinite}
+.trio .card:nth-child(2) .ico{animation-delay:-1s}
+.trio .card:nth-child(3) .ico{animation-delay:-2s}
+@media (max-height:1150px) and (min-width:1000px){
+  .trio .card-b{display:grid;grid-template-columns:auto 1fr;column-gap:1rem;row-gap:.35rem;align-items:center}
+  .trio .ico{grid-row:span 3;width:3.4rem;height:3.4rem}
+  .trio .status{grid-column:2}
+  .foot{margin-top:1.4rem}
+}
+@media (max-width:760px){
+  .trio{grid-template-columns:1fr}
+  .trio .card-b{display:grid;grid-template-columns:auto 1fr;column-gap:1rem;align-items:center}
+  .trio .ico{grid-row:span 3;width:3rem;height:3rem}
+  .trio .status{grid-column:2}
+}
+.hint{color:var(--ink-3);margin:.9rem 0 0;font-size:.85rem}
+.best{color:var(--amber);margin:.4rem 0 0;font-size:.95rem;min-height:1.5em}
+.foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.8rem 2rem;margin-top:2.2rem;color:var(--ink);font-size:1rem;align-items:center}
+.foot b{color:var(--mint)}
+.foot .status{margin:0;font-size:1rem}
+.fine{color:var(--ink-3);font-size:.78rem;margin:1rem 0 0;max-width:110ch}
+.fine a{color:var(--ink-2)}
+
+/* ---------- play ---------- */
+.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:clamp(14px,2vw,32px);align-items:start}
+@media (max-width:920px){.play{grid-template-columns:1fr}}
+.eyebrow{color:var(--mint);font-size:.82rem;letter-spacing:.12em;margin:0}
+.eyebrow.boss{color:var(--amber)}
+.mission h2{font-size:1.9rem;margin:0;line-height:1.1}
+.story{color:var(--ink-2);margin:0}
+.lab{color:var(--ink-3);font-size:.75rem;letter-spacing:.14em;margin:.3rem 0 0}
+.limits{list-style:none;margin:0;padding:0;display:grid;gap:.55rem}
+.limits li{display:flex;align-items:center;gap:.8rem;border:1.5px dashed var(--line-2);border-radius:8px;padding:.55rem .8rem}
+.limits .ico{width:2.5rem;height:2.5rem;color:var(--red);filter:drop-shadow(0 0 6px var(--red-glow))}
+.limits b{display:block;font-size:1.1rem}
+.limits small{color:var(--ink-3);font-size:.8rem}
+.goal{color:var(--ink-2);font-size:.88rem;margin:0;border-top:1px solid var(--line);padding-top:.8rem}
+.goal b{color:var(--mint)}
+.step{display:flex;align-items:center;gap:.6rem;font-weight:700;margin:0 0 .6rem}
+.step b{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--mint);color:var(--dark);font-size:.85rem;flex:none}
+.step span{color:var(--ink-3);font-weight:400;font-size:.82rem}
+.devs{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.3rem}
+@media (max-width:520px){.devs{grid-template-columns:1fr}}
+.pick{font:inherit;color:var(--ink);text-align:left;background:var(--card);border:2px solid var(--line-2);border-radius:10px;
+  padding:.8rem .9rem;cursor:pointer;display:flex;gap:.8rem;align-items:center;min-width:0;position:relative;
+  touch-action:manipulation;transition:border-color .12s,box-shadow .12s,transform .12s,background .12s}
+.pick:hover:not(:disabled){border-color:var(--mint-2);transform:translateY(-2px)}
+.pick[aria-checked="true"]{border-color:var(--mint);background:var(--card-2);box-shadow:0 0 0 1px var(--mint),0 0 22px rgba(124,240,170,.32)}
+.pick:disabled{opacity:.28;cursor:not-allowed}
+.pick .ico{width:2.8rem;height:2.8rem}
+.pick .nm{font-weight:800;display:block;line-height:1.25}
+.pick .sub{display:block;color:var(--ink-3);font-size:.78rem}
+.pick kbd{position:absolute;top:.4rem;right:.5rem;color:var(--ink-3)}
+.models{display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.6rem;margin-bottom:1.1rem}
+.models .pick{flex-direction:column;align-items:stretch;gap:.35rem;padding:.65rem .8rem}
+.models .nm{padding-right:1.6rem}
+.brain{display:block;height:.42rem;border-radius:3px;background:var(--line);overflow:hidden}
+.brain span{display:block;height:100%;background:var(--mint);border-radius:3px}
+.runrow{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:1rem}
+#pickTxt{color:var(--ink-2);margin:0}
+#pickTxt b{color:var(--mint)}
+
+/* ---------- séance ---------- */
+.seance{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:clamp(14px,2vw,32px);align-items:stretch}
+@media (max-width:920px){.seance{grid-template-columns:1fr}}
+.cmdline{color:var(--mint);margin:0;font-size:.9rem;word-break:break-all}
+.out{font-size:1.25rem;line-height:1.6;min-height:8.5em;white-space:pre-wrap;word-break:break-word}
+.out::after{content:"▋";color:var(--mint);animation:blink 1s steps(1) infinite}
+.out.done::after{content:""}
+.done-line{color:var(--mint);margin:0;min-height:1.5em;font-weight:700}
+.meter{display:grid;gap:.3rem;margin-bottom:.9rem}
+.meter .row{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem}
+.meter .lab{margin:0}
+.meter .val{font-size:1.8rem;font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums;text-shadow:0 0 14px var(--mint-glow);line-height:1.1}
+.meter .sub{color:var(--ink-3);font-size:.75rem}
+.track{position:relative;height:.7rem;background:var(--bg-2);border:1px solid var(--line-2);border-radius:4px}
+.track .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--mint);border-radius:3px;box-shadow:0 0 10px var(--mint-glow)}
+.track .lim{position:absolute;top:-.3rem;bottom:-.3rem;width:3px;margin-left:-1.5px;background:var(--amber);border-radius:2px}
+.track .lim::after{content:attr(data-l);position:absolute;top:calc(100% + .1rem);left:50%;transform:translateX(-50%);font-size:.68rem;color:var(--amber);white-space:nowrap}
+.meter.over .val{color:var(--red);text-shadow:0 0 14px var(--red-glow)}
+.meter.over .fill{background:var(--red);box-shadow:0 0 10px var(--red-glow)}
+.alerts{display:grid;gap:.4rem;min-height:1rem}
+.alert{display:flex;align-items:center;gap:.6rem;color:var(--red);font-weight:800;font-size:.88rem;animation:rise .4s cubic-bezier(.2,1.4,.4,1) both, flicker 1.6s infinite .4s}
+.alert .ico{width:1.8rem;height:1.8rem;color:var(--red);filter:drop-shadow(0 0 6px var(--red-glow))}
+.note{color:var(--ink-3);font-size:.75rem;margin:0}
+
+/* ---------- verdict ---------- */
+.vgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:clamp(14px,2vw,32px);align-items:start}
+@media (max-width:1000px){.vgrid{grid-template-columns:1fr}}
+.big-status{font-size:clamp(1.5rem,2.6vw,2.2rem);font-weight:800;margin:0;line-height:1.1}
+.big-status.ok{color:var(--mint);text-shadow:0 0 18px var(--mint-glow)}
+.big-status.bad{color:var(--red);text-shadow:0 0 18px var(--red-glow)}
+.mons{display:flex;gap:.7rem;flex-wrap:wrap}
+.mon{display:flex;align-items:center;gap:.8rem;border:1.5px solid var(--red);border-radius:10px;padding:.55rem .9rem;color:var(--red);
+  background:rgba(255,107,107,.07);animation:rise .55s cubic-bezier(.2,1.4,.4,1) both;flex:1 1 13rem;min-width:0}
+.mon .ico{color:var(--red);filter:drop-shadow(0 0 10px var(--red-glow));animation:float 2.4s ease-in-out infinite;width:3.4rem;height:3.4rem}
+.mon b{display:block;font-size:1.05rem}
+.mon span{color:var(--ink-2);font-size:.82rem}
+.mon.ok{border-color:var(--mint);color:var(--mint);background:rgba(124,240,170,.07)}
+.mon.ok .ico{color:var(--mint);filter:drop-shadow(0 0 10px var(--mint-glow))}
+.vline{margin:0;color:var(--ink-2)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem 1rem;margin:0}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stats div{border-left:2px solid var(--line-2);padding-left:.65rem;min-width:0}
+.stats dt{color:var(--ink-3);font-size:.7rem;letter-spacing:.06em}
+.stats dd{margin:0;font-weight:800;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.stats .bad{border-color:var(--red)}
+.stats .bad dd{color:var(--red)}
+.fn{color:var(--ink-3);font-size:.75rem;margin:0}
+.fn:empty{display:none}
+.vfoot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:.9rem;margin-top:auto}
+.pts{font-size:1.5rem;font-weight:800;color:var(--mint);margin:0;text-shadow:0 0 14px var(--mint-glow)}
+.pts small{font-size:.7rem;color:var(--ink-3);font-weight:500;text-shadow:none;display:block}
+.alog{font-size:.84rem;line-height:1.55;color:var(--ink-2);min-height:10.9em;white-space:pre-wrap;word-break:break-word}
+.alog div{animation:fade .2s ease both}
+.alog .cmd{color:var(--ink);margin:0;min-height:0;font-size:inherit}
+.alog .ok{color:var(--mint);font-weight:700}
+.alog .dim{color:var(--ink-3)}
+.chart-wrap{opacity:0;transition:opacity .6s ease}
+.chart-wrap.show{opacity:1}
+.chart svg{width:100%;height:auto;max-height:38vh;display:block}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .tk{fill:var(--ink-3);font-size:13px;font-family:var(--mono)}
+.chart .ax{fill:var(--ink-3);font-size:12px;font-family:var(--mono);letter-spacing:.02em}
+.chart .zone{fill:rgba(124,240,170,.08);stroke:var(--mint);stroke-width:1.5;stroke-dasharray:6 4}
+.chart .zl{fill:var(--mint);font-size:12px;font-weight:700;font-family:var(--mono);letter-spacing:.06em}
+.chart .pt{stroke-width:2}
+.chart .pt.j{fill:var(--mint);stroke:var(--mint)}
+.chart .pt.r{fill:var(--sky);stroke:var(--sky)}
+.chart .pt.h{fill:var(--bg)}
+.chart .agent{fill:none;stroke:var(--amber);stroke-width:3}
+.chart .you{fill:none;stroke-width:3}
+.chart .you.ok{stroke:#fff}
+.chart .you.bad{stroke:var(--red)}
+.chart .lbl{font-size:13px;font-weight:800;font-family:var(--mono);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+.chart .lbl.a{fill:var(--amber)}
+.chart .lbl.y{fill:#fff}
+.chart .lbl.yb{fill:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.72rem;color:var(--ink-3);margin-top:.4rem}
+.legend span{display:inline-flex;align-items:center;gap:.4rem}
+.legend i{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;flex:none}
+.legend .j{background:var(--mint)} .legend .r{background:var(--sky)}
+.legend .h{border:2px solid var(--ink-3)}
+.legend .dia{border:2.5px solid var(--amber);border-radius:1px;transform:rotate(45deg);width:.6rem;height:.6rem}
+.legend .ring{border:2.5px solid #fff;width:.85rem;height:.85rem}
+.insight{margin:0;color:var(--ink);border-left:3px solid var(--amber);padding:.15rem 0 .15rem .8rem;font-size:.93rem;min-height:3em}
+.insight:empty{border-color:transparent}
+
+/* ---------- end ---------- */
+.egrid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,1fr);gap:clamp(14px,2vw,28px);align-items:stretch;margin-bottom:1.6rem}
+@media (max-width:1150px){.egrid{grid-template-columns:1fr 1fr}.egrid .card:last-child{grid-column:1/-1}}
+@media (max-width:720px){.egrid{grid-template-columns:1fr}}
+.score-big{font-size:clamp(3rem,5.4vw,4.8rem);font-weight:800;color:var(--mint);text-shadow:0 0 26px var(--mint-glow);line-height:1;font-variant-numeric:tabular-nums}
+.score-max{color:var(--ink-3);font-size:1rem;margin-left:.4rem}
+.rank{font-size:1.35rem;font-weight:800;color:#fff;margin:0;line-height:1.2}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.tally div{display:flex;flex-direction:column;align-items:center;gap:.15rem;border:1.5px solid var(--line-2);border-radius:8px;padding:.5rem .3rem;color:var(--ink-3);font-size:.72rem}
+.tally .ico{width:2.2rem;height:2.2rem;color:var(--ink-3);filter:none}
+.tally b{font-size:1.3rem;color:var(--ink-2)}
+.tally .hit{border-color:var(--red);color:var(--red)}
+.tally .hit .ico,.tally .hit b{color:var(--red)}
+.nlist{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.nlist li{display:grid;grid-template-columns:2rem minmax(0,1fr) auto auto;gap:.7rem;align-items:center;padding:.35rem .5rem;border-radius:6px;background:var(--bg-2);font-size:.86rem}
+.nlist .n{color:var(--ink-3)}
+.nlist .p small{display:block;color:var(--ink-3);font-size:.72rem}
+.nlist .j{font-variant-numeric:tabular-nums}
+.nlist .s{font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums;min-width:3.6em;text-align:right}
+.nlist li.bad .j{color:var(--red)}
+.bars{display:grid;gap:.45rem;margin-top:.3rem}
+.bars .b{display:grid;grid-template-columns:7.2rem minmax(0,1fr) 5.2rem;gap:.6rem;align-items:center;font-size:.8rem}
+.bars .t{height:.85rem;background:var(--bg-2);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.bars .f{display:block;height:100%;background:var(--mint);width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.bars .b.ag .f{background:var(--amber)} .bars .b.wc .f{background:var(--red)}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums}
+.scaled{color:var(--ink-2);font-size:.85rem;margin:.2rem 0 0}
+.scaled b{color:var(--mint)}
+.nform label{display:block;color:var(--ink-3);font-size:.78rem;margin-bottom:.35rem}
+.nform .row{display:flex;gap:.5rem}
+.nform input{font:inherit;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--bg-2);border:2px solid var(--line-2);color:var(--ink);
+  border-radius:8px;padding:.55rem .8rem;min-height:48px;flex:1;min-width:0}
+.nform input:focus{border-color:var(--mint);outline:none;box-shadow:0 0 14px var(--mint-glow)}
+.saved{color:var(--mint);margin:0;font-weight:700}
+.board{list-style:none;margin:0;padding:0}
+.board li{display:grid;grid-template-columns:2.2rem minmax(0,1fr) auto;gap:.5rem;padding:.32rem 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+.board li span:first-child{color:var(--ink-3)}
+.board li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li b{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.board li.me{color:var(--amber)} .board li.me b{color:var(--amber)}
+.board li.empty{display:block;color:var(--ink-3);border:0}
+.link{font:inherit;font-size:.72rem;color:var(--ink-3);background:none;border:0;padding:.3rem 0;cursor:pointer;text-decoration:underline;align-self:flex-start;margin-top:auto}
+
+/* ---------- autopilot banner ---------- */
+.ap{position:fixed;left:50%;bottom:1.1rem;transform:translateX(-50%);z-index:50;background:var(--amber);color:#1a1200;font-weight:800;
+  padding:.55rem 1.1rem;border-radius:999px;box-shadow:0 0 26px rgba(255,195,92,.45);font-size:.82rem;white-space:nowrap;
+  max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis;animation:pulse 2s ease-in-out infinite}
+
+/* ---------- motion ---------- */
+@keyframes blink{50%{opacity:0}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(22px) scale(.7)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes flicker{0%,100%{opacity:1}46%{opacity:.9}50%{opacity:.45}54%{opacity:.95}}
+@keyframes pulse{0%,100%{box-shadow:0 0 18px rgba(255,195,92,.35)}50%{box-shadow:0 0 34px rgba(255,195,92,.7)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- line icons, drawn for this page -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-vampire" viewBox="0 0 64 64">
+      <path d="M14 27c0-11 8-19 18-19s18 8 18 19c0 13-8 23-18 28-10-5-18-15-18-28z"/>
+      <path d="M14 29l-8-8 3 15M50 29l8-8-3 15"/>
+      <path d="M20 18c5 1 9 4 12 9 3-5 7-8 12-9"/>
+      <path d="M22 31l6 2.5M42 31l-6 2.5"/>
+      <path d="M23 41c6 3.5 12 3.5 18 0"/>
+      <path d="M27 42.5l1.8 5 1.8-4.2M37 42.5l-1.8 5-1.8-4.2"/>
+    </symbol>
+    <symbol id="i-zombie" viewBox="0 0 64 64">
+      <circle cx="32" cy="27" r="18"/>
+      <path d="M21 21l7 7M28 21l-7 7"/>
+      <circle cx="40" cy="25" r="3.2"/>
+      <path d="M22 37h20M27 34v6M32 34v6M37 34v6"/>
+      <path d="M24 45v9M32 45v13M40 45v7"/>
+    </symbol>
+    <symbol id="i-ghost" viewBox="0 0 64 64">
+      <path d="M16 56V30a16 16 0 0 1 32 0v26l-5.3-4.5-5.4 4.5-5.3-4.5-5.3 4.5-5.4-4.5z"/>
+      <circle cx="26" cy="31" r="2.4" fill="currentColor"/>
+      <circle cx="38" cy="31" r="2.4" fill="currentColor"/>
+      <path d="M27 39c3 3 7 3 10 0"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 64 64">
+      <path d="M32 6l20 8v14c0 14-9 24-20 30C21 52 12 42 12 28V14z"/>
+      <path d="M22 31l7 7 13-14"/>
+    </symbol>
+    <symbol id="i-board" viewBox="0 0 64 64">
+      <rect x="8" y="12" width="48" height="40" rx="4"/>
+      <rect x="24" y="24" width="16" height="16" rx="2"/>
+      <path d="M28 24v-5M32 24v-5M36 24v-5M28 40v5M32 40v5M36 40v5M24 28h-5M24 32h-5M24 36h-5M40 28h5M40 32h5M40 36h5"/>
+      <circle cx="14" cy="18" r="1.4" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-gpu" viewBox="0 0 64 64">
+      <rect x="5" y="16" width="54" height="30" rx="4"/>
+      <circle cx="21" cy="31" r="9"/>
+      <circle cx="43" cy="31" r="9"/>
+      <path d="M21 25v12M15 31h12M43 25v12M37 31h12"/>
+      <path d="M12 46v6M18 46v6M24 46v6M30 46v6"/>
+    </symbol>
+    <symbol id="i-robot" viewBox="0 0 64 64">
+      <rect x="13" y="20" width="38" height="30" rx="8"/>
+      <path d="M32 20v-8"/>
+      <circle cx="32" cy="9" r="3"/>
+      <circle cx="25" cy="34" r="3.2"/>
+      <circle cx="39" cy="34" r="3.2"/>
+      <path d="M26 43h12M13 34H8M51 34h5"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="bar">
+  <button class="brand" id="brand" type="button" aria-label="Back to the title screen">$<span class="nm"> haunted-lab</span> <span class="dim">--edge</span></button>
+  <span class="spacer"></span>
+  <div class="hud" id="hud" hidden>
+    <span class="nlabel" id="nLabel"></span>
+    <span class="nights" id="nights" aria-hidden="true"></span>
+    <span><span class="slbl">SCORE </span><b id="hudScore">0</b></span>
+  </div>
+  <div class="tools">
+    <button class="tbtn" id="btnMute" type="button" aria-pressed="false"><span class="lbl">[M] </span><span id="muteTxt">SOUND ON</span></button>
+    <button class="tbtn" id="btnFull" type="button"><span class="lbl">[F] </span>FULL SCREEN</button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ================= TITLE ================= -->
+  <section class="screen" id="s-title" aria-labelledby="h-title">
+    <p class="cmd" aria-hidden="true"><span id="tCmd"></span><span class="caret">_</span></p>
+    <h1 id="h-title"><span class="g">AGENTIC AI @ EDGE</span><br><span class="w">THE HAUNTED LAB</span></h1>
+    <p class="lede">Four haunted missions. Seventeen setups we measured on real edge hardware. For each mission you summon a model on a device. Our benchmark numbers decide whether a monster escapes. Then our agents show you what they would have picked.</p>
+    <div class="trio">
+      <article class="card">
+        <div class="card-h"><span>VAMPIRE.LOG</span><span>01</span></div>
+        <div class="card-b">
+          <svg class="ico" aria-hidden="true"><use href="#i-vampire"/></svg>
+          <h3>Energy vampire</h3>
+          <p>Escapes when a setup uses more joules per answer than the mission allows.</p>
+          <p class="status">STATUS: DRAINING</p>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>ZOMBIE.LOG</span><span>02</span></div>
+        <div class="card-b">
+          <svg class="ico" aria-hidden="true"><use href="#i-zombie"/></svg>
+          <h3>Latency zombie</h3>
+          <p>Escapes when the answer takes longer than the time limit.</p>
+          <p class="status">STATUS: SHAMBLING</p>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>PHANTOM.LOG</span><span>03</span></div>
+        <div class="card-b">
+          <svg class="ico" aria-hidden="true"><use href="#i-ghost"/></svg>
+          <h3>Hallucination phantom</h3>
+          <p>Escapes when the model has too few parameters for the task.</p>
+          <p class="status">STATUS: NOT FOUND</p>
+        </div>
+      </article>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnStart" type="button">▶ START THE NIGHT SHIFT <kbd>Enter</kbd></button>
+      <button class="btn" id="btnAuto" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-robot"/></svg> WATCH THE AGENTS PLAY <kbd>A</kbd></button>
+    </div>
+    <p class="hint">🔊 Best with sound: church organ, heartbeats and monster cries.</p>
+    <p class="best" id="tBest"></p>
+    <footer class="foot">
+      <span>Aligned with <b>SDG 7</b> · <b>SDG 9</b> · <b>SDG 13</b></span>
+      <span class="status">STATUS: GREEN &amp; GHOULISH</span>
+    </footer>
+    <p class="fine">No planets were haunted in this research. · Data: GAMING benchmark (IEEE WCCCT 2026) on a Jetson Orin Nano and an RTX 4060 laptop GPU, mean of 30 prompts per setup, CO₂ at 400 g/kWh. · Agentic AI @Edge, TU Dresden · <a href="../index.html">Event website</a></p>
+  </section>
+
+  <!-- ================= PLAY ================= -->
+  <section class="screen" id="s-play" hidden aria-labelledby="mName">
+    <div class="play">
+      <article class="card mission">
+        <div class="card-h"><span id="mFile"></span><span id="mNum"></span></div>
+        <div class="card-b">
+          <p class="eyebrow" id="mCode"></p>
+          <h2 id="mName"></h2>
+          <p class="story" id="mStory"></p>
+          <p class="lab">LIMITS</p>
+          <ul class="limits" id="mLimits"></ul>
+          <p class="goal"><b>Goal:</b> stay inside every limit and use as little energy per answer as you can. The leaner your pick, the more points.</p>
+        </div>
+      </article>
+      <div class="summon">
+        <p class="step"><b>1</b>Choose the hardware <span>(J / R)</span></p>
+        <div class="devs" id="devs" role="radiogroup" aria-label="Hardware"></div>
+        <p class="step"><b>2</b>Summon a model <span>(1–9)</span></p>
+        <div class="models" id="models" role="radiogroup" aria-label="Model"></div>
+        <div class="runrow">
+          <p id="pickTxt" aria-live="polite"></p>
+          <button class="btn primary" id="btnRun" type="button" disabled>RUN THE SÉANCE ▶ <kbd>Enter</kbd></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SÉANCE ================= -->
+  <section class="screen" id="s-seance" hidden aria-label="Running the model">
+    <div class="seance">
+      <article class="card">
+        <div class="card-h"><span>SEANCE.LOG</span><span id="seHead"></span></div>
+        <div class="card-b">
+          <p class="cmdline" id="seCmd"></p>
+          <div class="out" id="seOut"></div>
+          <p class="done-line" id="seDone" aria-live="polite"></p>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>METERS.LOG</span><span>LIVE</span></div>
+        <div class="card-b">
+          <div class="meter" id="mTime"><div class="row"><span class="lab">TIME</span><span class="val">0.00 s</span></div><div class="track"><div class="fill"></div><div class="lim"></div></div></div>
+          <div class="meter" id="mEnergy"><div class="row"><span class="lab">ENERGY USED</span><span class="val">0.0 J</span></div><div class="track"><div class="fill"></div><div class="lim"></div></div></div>
+          <div class="meter" id="mPower"><div class="row"><span class="lab">POWER DRAW</span><span class="val">0.0 W</span></div><div class="track"><div class="fill"></div><div class="lim"></div></div></div>
+          <div class="meter" id="mTok"><div class="row"><span class="lab">TOKENS <span class="sub" id="tpsTxt"></span></span><span class="val">0 / 64</span></div><div class="track"><div class="fill"></div><div class="lim"></div></div></div>
+          <div class="alerts" id="seAlerts" aria-live="polite"></div>
+          <div class="actions"><button class="btn" id="btnSkip" type="button">SKIP ⏩ <kbd>Space</kbd></button></div>
+          <p class="note">Replayed at real speed from the GAMING benchmark (mean of 30 prompts). Sample answer text.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= VERDICT ================= -->
+  <section class="screen" id="s-verdict" hidden aria-labelledby="vTitle">
+    <div class="vgrid">
+      <article class="card" id="vCard">
+        <div class="card-h"><span>VERDICT.LOG</span><span id="vNum"></span></div>
+        <div class="card-b">
+          <h2 class="big-status" id="vTitle"></h2>
+          <div class="mons" id="vMons"></div>
+          <p class="vline" id="vLine"></p>
+          <dl class="stats" id="vStats"></dl>
+          <p class="fn" id="vFn"></p>
+          <div class="vfoot">
+            <p class="pts" id="vPts"></p>
+            <button class="btn primary" id="btnNext" type="button"></button>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>AGENT.LOG</span><span>GREEN AI + OPTIMIZATION AGENTS</span></div>
+        <div class="card-b">
+          <div class="alog" id="vLog" aria-live="polite"></div>
+          <div class="chart-wrap" id="vChartWrap">
+            <div class="chart" id="vChart"></div>
+            <div class="legend">
+              <span><i class="j"></i>Jetson Orin Nano</span>
+              <span><i class="r"></i>RTX 4060 Laptop</span>
+              <span><i class="h"></i>too few brains</span>
+              <span><i class="dia"></i>agents' pick</span>
+              <span><i class="ring"></i>your pick</span>
+            </div>
+          </div>
+          <p class="insight" id="vInsight"></p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= END ================= -->
+  <section class="screen" id="s-end" hidden aria-labelledby="h-end">
+    <p class="cmd" aria-hidden="true">$ scan --results<span class="caret">_</span></p>
+    <h1 id="h-end"><span class="g">NIGHT SHIFT</span> <span class="w">COMPLETE</span></h1>
+    <div class="egrid">
+      <article class="card">
+        <div class="card-h"><span>RANK.LOG</span><span>01</span></div>
+        <div class="card-b">
+          <div><span class="score-big" id="eScore">0</span><span class="score-max" id="eMax"></span></div>
+          <p class="rank" id="eRank"></p>
+          <div class="tally" id="eTally"></div>
+          <p class="status" id="eStatus"></p>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>ENERGY.LOG</span><span>02</span></div>
+        <div class="card-b">
+          <ol class="nlist" id="eNights"></ol>
+          <p class="lab">ENERGY FOR YOUR FOUR ANSWERS</p>
+          <div class="bars" id="eBars"></div>
+          <p class="scaled" id="eScaled"></p>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-h"><span>LEADERBOARD.LOG</span><span>03</span></div>
+        <div class="card-b">
+          <form class="nform" id="eForm" autocomplete="off">
+            <label for="eName">Your name for this machine's board</label>
+            <div class="row"><input id="eName" maxlength="12" placeholder="NAME" enterkeyhint="done" spellcheck="false"><button class="btn primary" type="submit">SAVE</button></div>
+          </form>
+          <p class="saved" id="eSaved" hidden>✓ Saved to this machine's board.</p>
+          <ol class="board" id="eBoard"></ol>
+          <button class="link" id="eReset" type="button">reset board</button>
+        </div>
+      </article>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnAgain" type="button">▶ PLAY AGAIN</button>
+      <a class="btn" href="../index.html">← EVENT WEBSITE</a>
+      <a class="btn" href="../decks/SAGE_e-gaming.html">EXPLORE ALL 17 RUNS</a>
+    </div>
+    <footer class="foot">
+      <span>Aligned with <b>SDG 7</b> · <b>SDG 9</b> · <b>SDG 13</b></span>
+      <span class="status">STATUS: GREEN &amp; GHOULISH</span>
+    </footer>
+    <p class="fine">No planets were haunted in this research. · "Brains" uses parameter count as a simple stand-in for answer quality. · Data: GAMING benchmark, mean of 30 prompts per setup, CO₂ at 400 g/kWh.</p>
+  </section>
+</main>
+
+<div class="ap" id="apBanner" hidden role="status">AUTOPILOT · the agents are playing · tap or press any key to take over</div>
+
+<script>
+'use strict';
+/* ============================================================
+   DATA: GAMING benchmark, copied from decks/SAGE_e-gaming.html
+   [device, model, params(B), avg ms, p50 ms, p95 ms, throughput, tokens/s,
+    watts, kWh for 30 prompts, g CO2 for 30 prompts, mem, cpu%]
+   ============================================================ */
+const RAW=[
+['Jetson','Qwen2.5 1.5B',1.5,3431.839,3401.717,3706.978,0.291389,18.648894,10.447,0.000298789,0.119515,null,66.706],
+['Jetson','Qwen2.5 3B',3,6861.308,6813.54,7234.764,0.145745,9.327668,10.825,0.000618959,0.247583,null,69.508],
+['Jetson','Qwen3 4B',4,12391.727,12283.755,13010.082,0.080699,5.164736,8.379,0.000865305,0.346122,null,58.287],
+['Jetson','Gemma3 4B',4,9137.532,8685.39,8944.6,0.109439,7.00408,10.6,0.000807173,0.322869,null,63.262],
+['Jetson','DeepSeek-R1 1.5B',1.5,5279.264,5209.03,5454.737,0.18942,12.122903,7.805,0.00034337,0.137348,null,49.103],
+['Jetson','Ministral 3B',3,9484.477,9407.412,9809.972,0.105435,6.747868,8.87,0.000701072,0.280429,null,52.677],
+['Jetson','Llama3.2 3B',3,8606.658,8577.115,8871.083,0.116189,7.436103,8.572,0.000614815,0.245926,null,52.972],
+['Jetson','Llama3.1 8B Q4',8,16280.392,15647.072,16307.163,0.061424,3.931109,10.527,0.001428183,0.571273,null,81.008],
+['Jetson','Llama3.1 8B Q3',8,18531.203,16777.101,17258.239,0.053963,3.453634,9.93,0.00153355,0.61342,null,73.6],
+['RTX','Qwen2.5 1.5B',1.5,898.174,906.339,912.636,1.11337,71.255669,79.372,0.000594104,0.237641,7.7369,10.207],
+['RTX','Qwen2.5 3B',3,654.566,694.584,714.097,1.527729,89.88138,73.512,0.000401011,0.160404,7.8365,9.344],
+['RTX','Qwen3 4B',4,1385.257,1294.584,1822.894,0.721888,46.200814,60.842,0.000702367,0.280947,7.233,5.888],
+['RTX','Gemma3 4B',4,1040.588,1077.791,1097.223,0.960995,61.50367,74.131,0.000642859,0.257144,7.8522,9.577],
+['RTX','DeepSeek-R1 1.5B',1.5,948.62,992.273,1097.357,1.054163,67.466408,46.677,0.000369,0.1476,7.192,5.814],
+['RTX','Ministral 3B',3,1330.357,1346.251,1403.24,0.751678,48.107405,57.814,0.000640955,0.256382,7.2096,5.887],
+['RTX','Llama3.2 3B',3,1012.465,1004.323,1140.263,0.987688,63.212046,64.074,0.00054063,0.216252,7.233,6.132],
+['RTX','Llama3.1 8B Q4',8,1380.425,1389.737,1403.526,0.724414,46.362517,84.128,0.000967794,0.387118,7.7721,5.594]];
+
+const TOKENS=64;           // answers in the benchmark are about 64 tokens long
+const GRID_G_PER_KWH=400;  // grid factor used in the GAMING run logs
+const CFG=RAW.map(([dev,model,params,avg,,,,tps,watt,kwh,co2])=>({
+  id:dev+'|'+model, dev, model, params, s:avg/1000, tps, watt,
+  J:kwh*3.6e6/30,            // joules per answer
+  co2k:co2/30*1000,          // grams CO2 per 1,000 answers
+  flag:dev==='RTX'&&model==='Qwen2.5 1.5B'
+}));
+const find=(d,m)=>CFG.find(c=>c.dev===d&&c.model===m);
+const MODELS=['DeepSeek-R1 1.5B','Qwen2.5 1.5B','Qwen2.5 3B','Llama3.2 3B','Ministral 3B','Gemma3 4B','Qwen3 4B','Llama3.1 8B Q4','Llama3.1 8B Q3'];
+const DEV={
+  Jetson:{name:'Jetson Orin Nano',short:'Jetson',key:'J',blurb:'Edge board',icon:'board'},
+  RTX:{name:'RTX 4060 Laptop',short:'RTX 4060',key:'R',blurb:'Laptop GPU',icon:'gpu'}
+};
+for(const d in DEV){const ws=CFG.filter(c=>c.dev===d).map(c=>c.watt);DEV[d].wMin=Math.min(...ws);DEV[d].wMax=Math.max(...ws)}
+
+const fJ=v=>v.toFixed(1)+' J';
+const fs=v=>(v<10?v.toFixed(2):v.toFixed(1))+' s';
+const pad=n=>String(n).padStart(2,'0');
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9.]+/g,'-').replace(/^-|-$/g,'');
+const ICON=(id,cls='')=>`<svg class="ico ${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+
+/* ============================================================
+   MISSIONS: limits chosen from the data so every night has a real best answer
+   J = max joules per answer, s = max seconds per answer, B = min parameters (billions)
+   ============================================================ */
+const MISSIONS=[
+{file:'SOLAR_CRYPT.LOG',name:'The Solar Crypt',lim:{J:45},
+ story:'A solar-powered sensor hub deep in the forest uses an on-board LLM to summarise its night alerts. The battery is tiny, so every joule counts.',
+ answer:'ALERT SUMMARY 03:12. Motion at trap 4: a fox, 92% confidence. Temperature fell to 4 °C. Battery at 61%, solar input low until sunrise. No human activity detected. Recommendation: keep the camera in low-power mode and send the next summary at 06:00.',
+ insight(){const a=find('Jetson','Qwen2.5 1.5B'),b=find('Jetson','Llama3.1 8B Q4');
+  return `Small brain, small board: ${a.model} on the Jetson needs only ${fJ(a.J)} per answer. Llama3.1 8B on the same board burns ${fJ(b.J)}. Bigger models cost more energy.`}},
+{file:'WAITING_ROOM.LOG',name:'The Waiting Room',lim:{s:1.0},
+ story:'A triage assistant greets patients at a clinic front desk at midnight. Nobody wants to wait with a zombie: every answer must arrive within 1 second.',
+ answer:'Good evening. A mild fever and a sore throat since yesterday is not an emergency. Please take a seat; a nurse will see you in about 15 minutes. If you feel short of breath, or your fever goes above 39 °C, tell the front desk straight away.',
+ insight(){const jf=Math.min(...CFG.filter(c=>c.dev==='Jetson').map(c=>c.s)),r=find('RTX','Llama3.2 3B');
+  return `No Jetson setup answers within 1 s: its fastest takes ${fs(jf)}. Only the RTX outruns the zombies tonight. Close call: Llama3.2 3B on the RTX takes ${fs(r.s)} and just misses.`}},
+{file:'HAUNTED_REPORT.LOG',name:'The Haunted Report',lim:{J:90,B:4},
+ story:'A doctor needs a careful summary of a patient report. Small models hallucinate here, so you need at least 4B parameters. The hospital’s energy budget allows 90 J per answer.',
+ answer:'SUMMARY. 67-year-old patient admitted with chest pain. ECG shows no acute changes; troponin normal on two tests. Blood pressure raised at 158/95. Plan: discharge with follow-up in 7 days, start a low-dose antihypertensive, and review the lipid panel when results arrive.',
+ insight(){const r=find('RTX','Gemma3 4B'),j=find('Jetson','Gemma3 4B');
+  return `Trick or treat! The ${Math.round(r.watt)} W RTX beats the ${Math.round(j.watt)} W Jetson on energy. Gemma3 4B finishes in ${fs(r.s)} on the RTX and ${fs(j.s)} on the Jetson, so it costs ${fJ(r.J)} instead of ${fJ(j.J)} per answer. Energy is power × time.`}},
+{file:'WITCHING_HOUR.LOG',name:'The Witching Hour',lim:{J:70,s:1.2,B:3},boss:true,
+ story:'Boss night. A connected-health assistant runs all night for thousands of patients. It must be smart (3B+), fast (1.2 s) and green (70 J) at the same time.',
+ answer:'Good night. Your heart-rate sensor logged 3 irregular readings in the last hour, all within safe limits. Your medication reminder is set for 21:00 and your next check-in is tomorrow at 08:30. Keep the watch charged overnight so I can keep an eye on things.',
+ insight(){const a=find('RTX','Qwen2.5 3B'),b=find('RTX','Ministral 3B');
+  return `Same GPU, same size, different bill: Qwen2.5 3B needs ${fJ(a.J)} and ${fs(a.s)}, while Ministral 3B needs ${fJ(b.J)} and ${fs(b.s)}. Choosing the model matters as much as choosing the hardware.`}}
+];
+
+/* which monsters escape for a setup under a mission's limits */
+function check(c,lim){
+  const out=[];
+  if(lim.J!=null&&c.J>lim.J) out.push('vampire');
+  if(lim.s!=null&&c.s>lim.s) out.push('zombie');
+  if(lim.B!=null&&c.params<lim.B) out.push('phantom');
+  return out;
+}
+const limitCount=lim=>['J','s','B'].filter(k=>lim[k]!=null).length;
+
+/* the agents: filter by every limit, then minimise energy per answer */
+function agentPlan(m){
+  const lines=[];let pool=CFG.slice();
+  lines.push({t:`> green_agent scan --runs ${pool.length}`,c:'cmd'});
+  lines.push({t:`  ${pool.length} measured setups loaded (GAMING benchmark)`,c:'dim'});
+  const steps=[
+    ['B',c=>c.params>=m.lim.B,()=>`brains ≥ ${m.lim.B}B`],
+    ['s',c=>c.s<=m.lim.s,()=>`time ≤ ${m.lim.s.toFixed(1)} s`],
+    ['J',c=>c.J<=m.lim.J,()=>`energy ≤ ${m.lim.J} J`]];
+  for(const[k,f,label] of steps){
+    if(m.lim[k]==null) continue;
+    pool=pool.filter(f);
+    lines.push({t:`> filter ${label()} `.padEnd(29,'.')+` ${pool.length} left`,c:''});
+  }
+  const best=pool.reduce((a,b)=>a.J<=b.J?a:b);
+  lines.push({t:'> optimize min(energy per answer)',c:''});
+  lines.push({t:`✓ ${DEV[best.dev].name} + ${best.model}`,c:'ok'});
+  lines.push({t:`  ${fJ(best.J)} · ${fs(best.s)} · ${best.params}B parameters`,c:'ok'});
+  return{lines,best,pool};
+}
+function roundScore(c,m,best){
+  const mon=check(c,m.lim);
+  if(!mon.length) return 500+Math.round(500*best.J/c.J);
+  return 100*(limitCount(m.lim)-mon.length);
+}
+
+/* ============================================================
+   helpers: DOM, storage, sound
+   ============================================================ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const BKEY='hauntedlab.board.v1', MKEY='hauntedlab.muted';
+
+/* All sounds are synthesised live with Web Audio: no audio files, works offline.
+   master -> compressor -> speakers, plus a generated "cathedral" reverb.
+   Music (the organ) runs on its own bus so it can be faded out when the action starts. */
+const SFX={
+  ctx:null,master:null,verb:null,music:null,on:!store.get(MKEY,false),
+  hz:m=>440*Math.pow(2,(m-69)/12),
+  init(){
+    if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{this.attach(new AC())}catch(e){return}}
+    if(this.ctx.state==='suspended')this.ctx.resume().catch(()=>{});
+  },
+  attach(c){
+    this.ctx=c;
+    const comp=c.createDynamicsCompressor();
+    comp.threshold.value=-16;comp.knee.value=12;comp.ratio.value=5;comp.attack.value=.004;comp.release.value=.25;
+    this.master=c.createGain();this.master.gain.value=.9;this.master.connect(comp);comp.connect(c.destination);
+    this.verb=c.createConvolver();this.verb.buffer=this.impulse(3.2,2.6);
+    const wet=c.createGain();wet.gain.value=.5;this.verb.connect(wet);wet.connect(this.master);
+    this.newMusicBus();
+  },
+  impulse(sec,decay){
+    const c=this.ctx,n=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,n,c.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,decay)}
+    return b;
+  },
+  newMusicBus(){const g=this.ctx.createGain();g.connect(this.master);g.connect(this.verb);this.music=g},
+  stopMusic(){
+    if(!this.ctx||!this.music)return;
+    const g=this.music,t=this.ctx.currentTime;
+    g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.35);
+    setTimeout(()=>{try{g.disconnect()}catch(e){}},700);
+    this.newMusicBus();
+  },
+  ok(){return this.on&&!!this.ctx&&this.ctx.state!=='closed'&&!(ap.on&&ap.quiet)},
+  send(node,amt){const w=this.ctx.createGain();w.gain.value=amt;node.connect(w);w.connect(this.verb)},
+  tone(f,d,{type='square',v=.04,t=0,to=null,wet=0}={}){
+    if(!this.ok())return;
+    const c=this.ctx,o=c.createOscillator(),g=c.createGain(),s=c.currentTime+t;
+    o.type=type;o.frequency.setValueAtTime(f,s);if(to)o.frequency.exponentialRampToValueAtTime(to,s+d);
+    g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(v,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+d);
+    o.connect(g);g.connect(this.master);if(wet)this.send(g,wet);
+    o.start(s);o.stop(s+d+.05);
+  },
+  /* one church-organ pipe: stacked sine "drawbars" (16', 8', 4', 2 2/3', 2', 1 1/3', 1') */
+  pipe(m,t,d,v=.05){
+    const c=this.ctx,s=c.currentTime+t,f=this.hz(m);
+    const env=c.createGain(),lp=c.createBiquadFilter();
+    lp.type='lowpass';lp.frequency.value=Math.min(8000,f*9);lp.Q.value=.3;
+    env.gain.setValueAtTime(0,s);env.gain.linearRampToValueAtTime(v,s+.025);
+    env.gain.setValueAtTime(v,s+Math.max(.03,d-.04));env.gain.linearRampToValueAtTime(0,s+d+.18);
+    env.connect(lp);lp.connect(this.music);
+    for(const[mul,amp] of [[.5,.55],[1,1],[2,.6],[3,.22],[4,.32],[6,.1],[8,.12]]){
+      const o=c.createOscillator(),og=c.createGain();
+      o.type='sine';o.frequency.value=f*mul;o.detune.value=(Math.random()-.5)*6;og.gain.value=amp*.3;
+      o.connect(og);og.connect(env);o.start(s);o.stop(s+d+.3);
+    }
+  },
+  /* the famous horror organ: opening of J. S. Bach's Toccata in D minor, BWV 565 (public domain) */
+  toccata(){
+    if(!this.ok())return;
+    this.stopMusic();
+    let t=.05;
+    const play=(m,d)=>{this.pipe(m,t,d,.1);this.pipe(m-12,t,d,.08);t+=d};
+    play(81,.12);play(79,.1);play(81,1.15);t+=.3;                                   // A-G-A ...
+    play(79,.13);play(77,.13);play(76,.13);play(74,.13);play(73,.85);t+=.12;play(74,1.25);t+=.15; // G F E D C#... D
+    [38,49,52,55,58,61,64].forEach((m,i)=>this.pipe(m,t+i*.07,1.5-i*.07,.07));      // rolled diminished chord over low D
+    t+=1.55;
+    [38,50,53,57,62,65,69].forEach(m=>this.pipe(m,t,2.3,.07));                       // D minor
+  },
+  /* "dun dun DUNNN" organ sting for the boss night */
+  sting(){
+    if(!this.ok())return;
+    this.stopMusic();
+    const ch=(ms,t,d)=>ms.forEach(m=>this.pipe(m,t,d,.08));
+    ch([38,50,57,62],0,.2);ch([38,50,57,62],.3,.2);ch([34,46,49,58,61],.62,1.8);
+  },
+  /* end of the night: diminished chord resolving to D major (good score) or D minor (still haunted) */
+  finale(good){
+    if(!this.ok())return;
+    this.stopMusic();
+    [38,49,52,55,58,61].forEach((m,i)=>this.pipe(m,i*.06,1.2-i*.06,.07));
+    (good?[38,50,54,57,62,66,69]:[38,50,53,57,62,65,69]).forEach(m=>this.pipe(m,1.25,2.6,.07));
+  },
+  /* heartbeat for the séance: lub-dub, louder as the limit gets close */
+  heart(stress){
+    if(!this.ok())return;
+    const c=this.ctx,s=c.currentTime,v=.45+.4*Math.min(1,stress);
+    for(const[dt,amp] of [[0,1],[.18,.6]]){
+      const o=c.createOscillator(),k=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();
+      lp.type='lowpass';lp.frequency.value=420;
+      o.type='sine';o.frequency.setValueAtTime(115,s+dt);o.frequency.exponentialRampToValueAtTime(48,s+dt+.14);
+      k.type='triangle';k.frequency.setValueAtTime(210,s+dt);k.frequency.exponentialRampToValueAtTime(90,s+dt+.05);
+      g.gain.setValueAtTime(.0001,s+dt);g.gain.exponentialRampToValueAtTime(v*amp,s+dt+.01);g.gain.exponentialRampToValueAtTime(.0001,s+dt+.17);
+      o.connect(lp);k.connect(lp);lp.connect(g);g.connect(this.master);
+      o.start(s+dt);k.start(s+dt);o.stop(s+dt+.2);k.stop(s+dt+.08);
+    }
+  },
+  /* vampire: a swarm of bat screeches */
+  bats(t){
+    const c=this.ctx;
+    for(let k=0;k<10;k++){
+      const s=c.currentTime+t+k*.065+Math.random()*.035,o=c.createOscillator(),g=c.createGain(),f=4200+Math.random()*2600;
+      o.type='sine';o.frequency.setValueAtTime(f,s);o.frequency.exponentialRampToValueAtTime(f*.5,s+.05);
+      g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.09,s+.005);g.gain.exponentialRampToValueAtTime(.0001,s+.055);
+      o.connect(g);g.connect(this.master);this.send(g,.45);o.start(s);o.stop(s+.07);
+    }
+  },
+  /* zombie: a rotten groan (buzzing voice through two moving vowel formants) */
+  groan(t){
+    const c=this.ctx,s=c.currentTime+t,d=1.5;
+    const o=c.createOscillator(),wob=c.createOscillator(),wg=c.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(92,s);o.frequency.linearRampToValueAtTime(118,s+.35);o.frequency.exponentialRampToValueAtTime(60,s+d);
+    wob.frequency.value=7;wg.gain.value=6;wob.connect(wg);wg.connect(o.frequency);
+    const g=c.createGain();
+    g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.9,s+.15);g.gain.setValueAtTime(.9,s+d-.4);g.gain.exponentialRampToValueAtTime(.0001,s+d);
+    for(const[a,b,e] of [[380,720,420],[900,1150,800]]){
+      const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=5;
+      f.frequency.setValueAtTime(a,s);f.frequency.linearRampToValueAtTime(b,s+.5);f.frequency.linearRampToValueAtTime(e,s+d);
+      o.connect(f);f.connect(g);
+    }
+    g.connect(this.master);this.send(g,.3);
+    o.start(s);wob.start(s);o.stop(s+d+.05);wob.stop(s+d+.05);
+  },
+  /* phantom: a theremin-style ghost wail, wooo-OOO-ooo */
+  wail(t){
+    const c=this.ctx,s=c.currentTime+t,d=2.2,o=c.createOscillator(),vib=c.createOscillator(),vg=c.createGain(),g=c.createGain();
+    o.type='sine';o.frequency.setValueAtTime(330,s);o.frequency.exponentialRampToValueAtTime(880,s+.7);
+    o.frequency.exponentialRampToValueAtTime(620,s+1.3);o.frequency.exponentialRampToValueAtTime(260,s+d);
+    vib.frequency.value=6.5;vg.gain.value=14;vib.connect(vg);vg.connect(o.frequency);
+    g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.13,s+.25);g.gain.setValueAtTime(.13,s+d-.6);g.gain.exponentialRampToValueAtTime(.0001,s+d);
+    o.connect(g);g.connect(this.master);this.send(g,.8);
+    o.start(s);vib.start(s);o.stop(s+d+.05);vib.stop(s+d+.05);
+  },
+  /* monsters escaped: low organ stab, then each monster's own sound */
+  monsters(list){
+    if(!this.ok())return;
+    this.stopMusic();
+    [37,38,44,50].forEach(m=>this.pipe(m,0,.9,.08));
+    let t=.35;
+    for(const k of list){
+      if(k==='vampire')this.bats(t);else if(k==='zombie')this.groan(t);else this.wail(t);
+      t+=k==='phantom'?1.4:1;
+    }
+  },
+  click(){this.tone(520,.06,{v:.03})},
+  pick(){this.tone(740,.06,{v:.03});this.tone(990,.07,{v:.025,t:.05})},
+  tick(){this.tone(1400+Math.random()*400,.02,{v:.006})},
+  alarm(){this.tone(220,.4,{type:'sawtooth',v:.045,to:110,wet:.3})},
+  good(){[523,659,784,1047].forEach((f,i)=>this.tone(f,.17,{type:'triangle',v:.1,t:i*.09,wet:.25}))}
+};
+
+/* ============================================================
+   state + screens
+   ============================================================ */
+const G={screen:'title',night:0,dev:null,model:null,pick:null,score:0,results:[],skip:null,saved:null};
+const ap={on:false,gen:0,quiet:false};
+const ABORT=Symbol('abort');
+let screenGen=0;
+
+function go(id){
+  screenGen++;G.skip=null;G.screen=id;document.body.dataset.screen=id;
+  for(const s of $$('.screen')) s.hidden=s.id!=='s-'+id;
+  $('#hud').hidden=!['play','seance','verdict'].includes(id);
+  renderHud();
+  window.scrollTo(0,0);
+  if(id==='title'){SFX.stopMusic();enterTitle()}
+}
+function renderHud(){
+  $('#hudScore').textContent=G.score.toLocaleString('en-US');
+  $('#nLabel').textContent=`NIGHT ${G.night+1}/${MISSIONS.length}`;
+  $('#nights').innerHTML=MISSIONS.map((m,i)=>{
+    const r=G.results[i];
+    const cls=r?(r.mon.length?'bad':'ok'):(i===G.night?'cur':'');
+    return `<i class="${cls}"></i>`;
+  }).join('');
+}
+
+/* ---------- title ---------- */
+async function enterTitle(){
+  const sg=screenGen,el=$('#tCmd'),txt='$ scan --edge-devices --mode=halloween';
+  const top=board().sort((a,b)=>b.s-a.s||a.t-b.t)[0];
+  $('#tBest').textContent=top?`TOP EXORCIST ON THIS MACHINE: ${top.n} · ${top.s.toLocaleString('en-US')} pts`:'';
+  el.textContent='';
+  for(const ch of txt){if(sg!==screenGen)return;el.textContent+=ch;await wait(34)}
+}
+
+/* ---------- play ---------- */
+function buildPicks(){
+  $('#devs').innerHTML=Object.entries(DEV).map(([id,d])=>
+    `<button type="button" class="pick dev" role="radio" aria-checked="false" data-dev="${id}">${ICON(d.icon)}<span><span class="nm">${d.name}</span><span class="sub">${d.blurb} · draws ${Math.round(d.wMin)}–${Math.round(d.wMax)} W</span></span><kbd>${d.key}</kbd></button>`).join('');
+  $('#models').innerHTML=MODELS.map((mn,i)=>{
+    const p=CFG.find(c=>c.model===mn).params;
+    return `<button type="button" class="pick mdl" role="radio" aria-checked="false" data-model="${mn}"><span class="nm">${mn}</span><span class="sub">${p}B parameters</span><span class="brain" title="brains"><span style="width:${p/8*100}%"></span></span><kbd>${i+1}</kbd></button>`;
+  }).join('');
+  $('#devs').addEventListener('click',e=>{const b=e.target.closest('.pick');if(b&&!b.disabled)selectDevice(b.dataset.dev)});
+  $('#models').addEventListener('click',e=>{const b=e.target.closest('.pick');if(b&&!b.disabled)selectModel(b.dataset.model)});
+}
+function updatePicks(){
+  for(const b of $$('.pick.dev')) b.setAttribute('aria-checked',String(G.dev===b.dataset.dev));
+  for(const b of $$('.pick.mdl')){
+    const mn=b.dataset.model,ok=!G.dev||!!find(G.dev,mn);
+    b.disabled=!ok;b.setAttribute('aria-checked',String(G.model===mn));
+    $('.sub',b).textContent=ok?`${CFG.find(c=>c.model===mn).params}B parameters`:`not measured on ${DEV[G.dev].short}`;
+  }
+  const c=G.pick,t=$('#pickTxt');
+  if(c) t.innerHTML=`<b>${DEV[c.dev].name}</b> + <b>${c.model}</b>. Ready to summon.`;
+  else t.textContent=G.dev?'Now summon a model.':G.model?'Now choose the hardware.':'Choose the hardware and a model.';
+  $('#btnRun').disabled=!c;
+}
+function selectDevice(d){
+  if(G.screen!=='play')return;
+  G.dev=d;if(G.model&&!find(d,G.model))G.model=null;
+  G.pick=G.model?find(d,G.model):null;SFX.pick();updatePicks();
+  if(G.pick&&!ap.on)$('#btnRun').focus({preventScroll:true});
+}
+function selectModel(mn){
+  if(G.screen!=='play'||(G.dev&&!find(G.dev,mn)))return;
+  G.model=mn;G.pick=G.dev?find(G.dev,mn):null;SFX.pick();updatePicks();
+  if(G.pick&&!ap.on)$('#btnRun').focus({preventScroll:true});
+}
+function limitItems(lim){
+  const out=[];
+  if(lim.J!=null) out.push(['vampire',`Energy ≤ ${lim.J} J`,'per answer, or a VAMPIRE escapes']);
+  if(lim.s!=null) out.push(['zombie',`Time ≤ ${lim.s.toFixed(1)} s`,'per answer, or a ZOMBIE escapes']);
+  if(lim.B!=null) out.push(['ghost',`Brains ≥ ${lim.B}B`,'parameters, or a PHANTOM escapes']);
+  return out.map(([ic,b,s])=>`<li>${ICON(ic)}<div><b>${b}</b><small>${s}</small></div></li>`).join('');
+}
+function newGame(){G.score=0;G.results=[];G.saved=null;showMission(0);SFX.toccata()}
+function showMission(i){
+  const m=MISSIONS[i];
+  G.night=i;G.dev=G.model=G.pick=null;
+  $('#mFile').textContent=m.file;$('#mNum').textContent=pad(i+1);
+  const code=$('#mCode');code.textContent=`NIGHT ${pad(i+1)} / ${pad(MISSIONS.length)}${m.boss?' · BOSS':''}`;code.classList.toggle('boss',!!m.boss);
+  $('#mName').textContent=m.name;$('#mStory').textContent=m.story;
+  $('#mLimits').innerHTML=limitItems(m.lim);
+  updatePicks();go('play');if(m.boss)SFX.sting();else SFX.click();
+  if(!ap.on)$('.pick.dev').focus({preventScroll:true});
+}
+
+/* ---------- séance ---------- */
+function setupMeter(id,max,lim,label){
+  const el=$('#'+id),l=$('.lim',el);
+  el.dataset.max=max;el.classList.remove('over');$('.fill',el).style.width='0%';
+  if(lim!=null){l.hidden=false;l.style.left=Math.min(100,lim/max*100)+'%';l.dataset.l=label}else l.hidden=true;
+}
+function meter(id,v,txt,over){
+  const el=$('#'+id);
+  $('.fill',el).style.width=Math.min(100,v/el.dataset.max*100)+'%';
+  $('.val',el).textContent=txt;el.classList.toggle('over',!!over);
+}
+function addAlert(icon,txt){
+  const d=document.createElement('div');d.className='alert';d.innerHTML=ICON(icon);
+  const s=document.createElement('span');s.textContent=txt;d.appendChild(s);$('#seAlerts').appendChild(d);
+}
+function startSeance(){
+  if(G.screen!=='play'||!G.pick) return Promise.resolve();
+  const m=MISSIONS[G.night],c=G.pick;
+  $('#seHead').textContent=`${DEV[c.dev].short.toUpperCase()} · ${c.model.toUpperCase()}`;
+  $('#seCmd').textContent=`$ summon --model ${slug(c.model)} --device ${slug(DEV[c.dev].name)}`;
+  const out=$('#seOut');out.textContent='';out.classList.remove('done');
+  $('#seAlerts').innerHTML='';$('#seDone').textContent='';
+  $('#tpsTxt').textContent=`· ${c.tps.toFixed(1)} tok/s`;
+  setupMeter('mTime',m.lim.s!=null?Math.max(m.lim.s*2,c.s*1.08):20,m.lim.s,m.lim.s!=null?`limit ${m.lim.s.toFixed(1)} s`:'');
+  setupMeter('mEnergy',m.lim.J!=null?Math.max(m.lim.J*2,c.J*1.08):200,m.lim.J,m.lim.J!=null?`limit ${m.lim.J} J`:'');
+  setupMeter('mPower',100,null);setupMeter('mTok',TOKENS,null);
+  go('seance');SFX.stopMusic();SFX.click();
+  if(!ap.on)$('#btnSkip').focus({preventScroll:true});
+  const sg=screenGen,words=m.answer.split(' '),dur=c.s*1000;
+  return new Promise(res=>{
+    let t0=performance.now(),shown=0,lastTick=0,alS=false,alJ=false,nextBeat=0;
+    G.skip=()=>{t0=performance.now()-dur};
+    const frame=now=>{
+      if(sg!==screenGen) return res();
+      const el=Math.min(Math.max(0,now-t0),dur),p=dur?el/dur:1;
+      const tS=el/1000,e=c.J*p,gen=Math.max(0,(p-.06)/.94),n=Math.round(TOKENS*gen);
+      const w=p<1?c.watt*(1+.05*Math.sin(now/83)+.025*Math.sin(now/29)):c.watt;
+      meter('mTime',tS,fs(tS),m.lim.s!=null&&tS>m.lim.s);
+      meter('mEnergy',e,fJ(e),m.lim.J!=null&&e>m.lim.J);
+      meter('mPower',w,w.toFixed(1)+' W',false);
+      meter('mTok',n,`${n} / ${TOKENS}`,false);
+      const k=Math.round(words.length*gen);
+      if(k>shown){shown=k;out.textContent=words.slice(0,k).join(' ');if(now-lastTick>60){SFX.tick();lastTick=now}}
+      if(!alS&&m.lim.s!=null&&tS>m.lim.s){alS=true;addAlert('zombie',`ZOMBIE ALERT · slower than ${m.lim.s.toFixed(1)} s`);SFX.alarm()}
+      if(!alJ&&m.lim.J!=null&&e>m.lim.J){alJ=true;addAlert('vampire',`VAMPIRE ALERT · over ${m.lim.J} J`);SFX.alarm()}
+      if(p<1&&now>=nextBeat){ // heartbeat speeds up as time or energy nears its limit
+        const st=Math.max(m.lim.s!=null?tS/m.lim.s:0,m.lim.J!=null?e/m.lim.J:0);
+        SFX.heart(st);nextBeat=now+60000/(st>1?150:62+70*st);
+      }
+      if(p<1) return requestAnimationFrame(frame);
+      out.classList.add('done');G.skip=null;
+      $('#seDone').textContent=`✓ ${TOKENS} tokens · answer complete in ${fs(c.s)}`;
+      setTimeout(()=>{if(sg===screenGen)showVerdict();res()},900);
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+/* ---------- verdict ---------- */
+function monCard(k,c,m,j){
+  const d={vampire:['vampire','VAMPIRE ESCAPED',`${fJ(c.J)} per answer · limit ${m.lim.J} J`],
+           zombie:['zombie','ZOMBIE ESCAPED',`${fs(c.s)} per answer · limit ${m.lim.s!=null?m.lim.s.toFixed(1):''} s`],
+           phantom:['ghost','PHANTOM ESCAPED',`${c.params}B parameters · needs ${m.lim.B}B`]}[k];
+  return `<div class="mon" style="animation-delay:${j*.22}s">${ICON(d[0])}<div><b>${d[1]}</b><span>${d[2]}</span></div></div>`;
+}
+function verdictLine(c,best,mon){
+  if(ap.on) return 'Autopilot: the agents filtered all 17 measured setups, then picked the one with the least energy per answer.';
+  if(!mon.length&&c.id===best.id) return 'You found the same setup as the agents. Spooky good.';
+  if(!mon.length) return `You survived the night, but the agents found a setup that uses ${fJ(c.J-best.J)} less per answer (${Math.round((1-best.J/c.J)*100)}% less).`;
+  return `The agents would have picked ${DEV[best.dev].short} + ${best.model}: ${fJ(best.J)} and ${fs(best.s)} per answer.`;
+}
+function statsHTML(c,m){
+  const rows=[
+    ['ENERGY / ANSWER',fJ(c.J),m.lim.J!=null&&c.J>m.lim.J],
+    ['TIME / ANSWER',fs(c.s),m.lim.s!=null&&c.s>m.lim.s],
+    ['BRAINS',`${c.params}B`,m.lim.B!=null&&c.params<m.lim.B],
+    ['POWER DRAW',`${c.watt.toFixed(1)} W`,false],
+    ['SPEED',`${c.tps.toFixed(1)} tok/s`,false],
+    ['CO₂ / 1,000 ANSWERS',`${c.co2k.toFixed(1)} g`,false]];
+  return rows.map(([k,v,bad])=>`<div class="${bad?'bad':''}"><dt>${k}</dt><dd>${v}${c.flag&&k.startsWith('ENERGY')?' *':''}</dd></div>`).join('');
+}
+function chartSVG(m,c,best){
+  const W=540,H=300,L=50,R=14,T=12,B=44,x0=Math.log(.5),x1=Math.log(20);
+  const X=s=>L+(Math.log(s)-x0)/(x1-x0)*(W-L-R), Y=j=>H-B-(j/200)*(H-B-T);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Energy per answer against time per answer for all 17 measured setups. Your pick: ${DEV[c.dev].name} with ${c.model}. Agents' pick: ${DEV[best.dev].name} with ${best.model}.">`;
+  for(const t of [.5,1,2,5,10,20]) s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H-B}"/><text class="tk" x="${X(t)}" y="${H-B+17}" text-anchor="middle">${t} s</text>`;
+  for(const j of [0,50,100,150,200]) s+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(j)}" y2="${Y(j)}"/><text class="tk" x="${L-7}" y="${Y(j)+4}" text-anchor="end">${j}</text>`;
+  s+=`<text class="ax" x="${(L+W-R)/2}" y="${H-5}" text-anchor="middle">TIME PER ANSWER (log scale) →</text>`;
+  s+=`<text class="ax" x="12" y="${(T+H-B)/2}" text-anchor="middle" transform="rotate(-90 12 ${(T+H-B)/2})">ENERGY PER ANSWER (J) →</text>`;
+  const zx=m.lim.s!=null?X(m.lim.s):W-R, zy=m.lim.J!=null?Y(m.lim.J):T;
+  s+=`<rect class="zone" x="${L}" y="${zy}" width="${zx-L}" height="${H-B-zy}"/><text class="zl" x="${L+7}" y="${H-B-7}">SAFE ZONE</text>`;
+  for(const p of CFG){
+    const ok=m.lim.B==null||p.params>=m.lim.B;
+    s+=`<circle class="pt ${p.dev==='Jetson'?'j':'r'} ${ok?'':'h'}" cx="${X(p.s).toFixed(1)}" cy="${Y(p.J).toFixed(1)}" r="5.5"><title>${DEV[p.dev].name} + ${p.model}: ${fJ(p.J)}, ${fs(p.s)}, ${p.params}B${p.flag?' (run log has no AWQ suffix: treat with caution)':''}</title></circle>`;
+  }
+  const bx=X(best.s),by=Y(best.J),cx=X(c.s),cy=Y(c.J),same=c.id===best.id,bad=check(c,m.lim).length>0;
+  // labels centred on their marker: agents' label below the diamond, yours above the ring
+  const cl=(x,half)=>Math.max(L+half,Math.min(W-R-half,x));
+  s+=`<path class="agent" d="M${bx} ${by-12}L${bx+12} ${by}L${bx} ${by+12}L${bx-12} ${by}Z"/>`;
+  s+=`<circle class="you ${bad?'bad':'ok'}" cx="${cx}" cy="${cy}" r="${same?17:13}"/>`;
+  if(same) s+=`<text class="lbl a" x="${cl(bx,48)}" y="${by+33}" text-anchor="middle">${ap.on?'AGENTS':'YOU = AGENTS'}</text>`;
+  else{
+    s+=`<text class="lbl a" x="${cl(bx,26)}" y="${by+29}" text-anchor="middle">AGENTS</text>`;
+    s+=`<text class="lbl ${bad?'yb':'y'}" x="${cl(cx,16)}" y="${Math.max(cy-19,T+12)}" text-anchor="middle">YOU</text>`;
+  }
+  return s+'</svg>';
+}
+function showVerdict(){
+  const i=G.night,m=MISSIONS[i],c=G.pick,A=agentPlan(m),best=A.best,mon=check(c,m.lim),pts=roundScore(c,m,best);
+  G.score+=pts;G.results[i]={c,best,mon,pts};
+  go('verdict');const sg=screenGen;
+  $('#vCard').classList.toggle('bad',mon.length>0);
+  $('#vNum').textContent=pad(i+1);
+  const vt=$('#vTitle');
+  vt.textContent=mon.length?`STATUS: ${mon.length} MONSTER${mon.length>1?'S':''} ESCAPED`:'STATUS: SLAYED';
+  vt.className='big-status '+(mon.length?'bad':'ok');
+  $('#vMons').innerHTML=mon.length?mon.map((k,j)=>monCard(k,c,m,j)).join('')
+    :`<div class="mon ok">${ICON('shield')}<div><b>NO MONSTERS ESCAPED</b><span>Every limit held tonight.</span></div></div>`;
+  $('#vLine').textContent=verdictLine(c,best,mon);
+  $('#vStats').innerHTML=statsHTML(c,m);
+  $('#vFn').textContent=c.flag?'* Run log has no AWQ suffix: treat this run with caution.':'';
+  $('#vPts').innerHTML=`+${pts}<small>${!mon.length?'points · max 1,000 per night':pts?'points for the limits you kept':'no points this night'}</small>`;
+  $('#btnNext').innerHTML=i<MISSIONS.length-1?'NEXT NIGHT ▶ <kbd>Enter</kbd>':'SEE RESULTS ▶ <kbd>Enter</kbd>';
+  mon.length?SFX.monsters(mon):SFX.good();
+  const log=$('#vLog');log.innerHTML='';
+  $('#vChart').innerHTML=chartSVG(m,c,best);$('#vChartWrap').classList.remove('show');$('#vInsight').textContent='';
+  if(!ap.on)$('#btnNext').focus({preventScroll:true});
+  (async()=>{
+    for(const ln of A.lines){
+      await wait(230);if(sg!==screenGen)return;
+      const d=document.createElement('div');d.className=ln.c;d.textContent=ln.t;log.appendChild(d);SFX.tick();
+    }
+    await wait(200);if(sg!==screenGen)return;
+    $('#vChartWrap').classList.add('show');$('#vInsight').textContent=m.insight();
+  })();
+}
+function next(){
+  if(G.screen!=='verdict')return;
+  if(G.night<MISSIONS.length-1)showMission(G.night+1);else showEnd();
+}
+
+/* ---------- end ---------- */
+function rankOf(score,monsters){
+  if(score>=3800&&monsters===0) return{t:'AGENT-GRADE EXORCIST',s:'STATUS: AS GOOD AS THE AGENTS',ok:true};
+  if(score>=3000) return{t:'VAMPIRE HUNTER',s:'STATUS: STAKE READY',ok:true};
+  if(score>=2000) return{t:'ZOMBIE SLAYER',s:'STATUS: BRAINS OPTIMIZED',ok:true};
+  return{t:'GHOUL APPRENTICE',s:'STATUS: STILL HAUNTED',ok:false};
+}
+function board(){const b=store.get(BKEY,[]);return Array.isArray(b)?b.filter(e=>e&&typeof e.n==='string'&&Number.isFinite(e.s)):[]}
+function renderBoard(el,limit,meT){
+  el.textContent='';
+  const b=board().sort((a,c)=>c.s-a.s||a.t-c.t).slice(0,limit);
+  if(!b.length){const li=document.createElement('li');li.className='empty';li.textContent='No exorcists yet. Be the first.';el.appendChild(li);return}
+  b.forEach((e,i)=>{
+    const li=document.createElement('li');if(e.t===meT)li.className='me';
+    const r=document.createElement('span');r.textContent=pad(i+1);
+    const n=document.createElement('span');n.textContent=e.n;
+    const s=document.createElement('b');s.textContent=e.s.toLocaleString('en-US');
+    li.append(r,n,s);el.appendChild(li);
+  });
+}
+function showEnd(){
+  const R=G.results,n=R.length||1;
+  const you=R.reduce((a,r)=>a+r.c.J,0),agent=R.reduce((a,r)=>a+r.best.J,0);
+  const worst=CFG.reduce((a,b)=>a.J>=b.J?a:b).J*n;
+  const mons={vampire:0,zombie:0,phantom:0};R.forEach(r=>r.mon.forEach(k=>mons[k]++));
+  const total=mons.vampire+mons.zombie+mons.phantom,rk=rankOf(G.score,total);
+  go('end');
+  $('#eScore').textContent=G.score.toLocaleString('en-US');
+  $('#eMax').textContent=`/ ${(MISSIONS.length*1000).toLocaleString('en-US')}`;
+  $('#eRank').textContent=rk.t;
+  const st=$('#eStatus');st.textContent=rk.s;st.className='status'+(rk.ok?' ok':'');
+  $('#eTally').innerHTML=[['vampire','vampire'],['zombie','zombie'],['phantom','ghost']].map(([k,ic])=>
+    `<div class="${mons[k]?'hit':''}">${ICON(ic)}<b>${mons[k]}</b><span>${k}${mons[k]===1?'':'s'}</span></div>`).join('');
+  $('#eNights').innerHTML=R.map((r,i)=>
+    `<li class="${r.mon.length?'bad':'ok'}"><span class="n">${pad(i+1)}</span><span class="p">${DEV[r.c.dev].short} + ${r.c.model}<small>${MISSIONS[i].name}${r.mon.length?' · '+r.mon.join(', '):''}</small></span><span class="j">${fJ(r.c.J)}</span><span class="s">+${r.pts}</span></li>`).join('');
+  const bars=[['YOU','',you],['THE AGENTS','ag',agent],['WORST CASE','wc',worst]];
+  $('#eBars').innerHTML=bars.map(([l,c,v])=>`<div class="b ${c}"><span>${l}</span><span class="t"><span class="f" data-w="${(v/worst*100).toFixed(1)}"></span></span><span class="v">${Math.round(v)} J</span></div>`).join('');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$$('#eBars .f').forEach(f=>f.style.width=f.dataset.w+'%')));
+  const kwh=v=>v/n*1e6/3.6e6;
+  $('#eScaled').innerHTML=`Scaled to <b>1 million answers a day</b>: your setups would use <b>${kwh(you).toFixed(1)} kWh</b> and ${(kwh(you)*GRID_G_PER_KWH/1000).toFixed(1)} kg CO₂ per day. The agents: <b>${kwh(agent).toFixed(1)} kWh</b> and ${(kwh(agent)*GRID_G_PER_KWH/1000).toFixed(1)} kg CO₂.`;
+  $('#eForm').hidden=ap.on;$('#eSaved').hidden=true;$('#eName').value='';
+  renderBoard($('#eBoard'),8,null);
+  SFX.finale(rk.ok);
+  if(!ap.on)$('#eName').focus({preventScroll:true});
+}
+
+/* ============================================================
+   autopilot: the agents play every night themselves
+   ============================================================ */
+function apSleep(ms){const g=ap.gen;return new Promise((res,rej)=>setTimeout(()=>ap.on&&ap.gen===g?res():rej(ABORT),ms))}
+async function startAutopilot(quiet){
+  if(ap.on)return;
+  ap.on=true;ap.quiet=!!quiet;ap.gen++;$('#apBanner').hidden=false;
+  try{
+    for(;;){
+      G.score=0;G.results=[];
+      for(let i=0;i<MISSIONS.length;i++){
+        showMission(i);if(i===0)SFX.toccata();await apSleep(2600);
+        const best=agentPlan(MISSIONS[i]).best;
+        selectDevice(best.dev);await apSleep(900);
+        selectModel(best.model);await apSleep(1000);
+        await startSeance();await apSleep(8500);
+      }
+      showEnd();await apSleep(11000);
+      go('title');await apSleep(7000);
+    }
+  }catch(e){if(e!==ABORT)console.error(e)}
+}
+function stopAutopilot(){
+  if(!ap.on)return;
+  ap.on=false;ap.gen++;$('#apBanner').hidden=true;G.score=0;G.results=[];go('title');
+}
+
+/* ============================================================
+   input
+   ============================================================ */
+let lastInput=performance.now(),swallow=false;
+for(const ev of ['pointerdown','keydown','wheel','touchstart']) addEventListener(ev,()=>{lastInput=performance.now();SFX.init()},{capture:true,passive:true});
+addEventListener('pointerdown',e=>{
+  if(!ap.on)return;
+  e.preventDefault();e.stopPropagation();swallow=true;setTimeout(()=>swallow=false,700);stopAutopilot();
+},true);
+addEventListener('click',e=>{if(swallow){e.preventDefault();e.stopPropagation();swallow=false}},true);
+addEventListener('keydown',e=>{
+  if(!ap.on||['Shift','Control','Alt','Meta'].includes(e.key))return;
+  e.preventDefault();e.stopImmediatePropagation();stopAutopilot();
+},true);
+
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey||e.repeat)return;
+  const tag=e.target&&e.target.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA')return;
+  const k=e.key,low=k.toLowerCase(),onBtn=tag==='BUTTON'||tag==='A';
+  if(low==='m'){toggleMute();return}
+  if(low==='f'){toggleFull();return}
+  if(k==='Escape'){if(G.screen!=='title'){G.score=0;G.results=[];go('title')}return}
+  switch(G.screen){
+    case 'title':
+      if((k==='Enter'||k===' ')&&!onBtn){e.preventDefault();newGame()}
+      else if(low==='a')startAutopilot(false);
+      break;
+    case 'play':
+      if(low==='j')selectDevice('Jetson');
+      else if(low==='r')selectDevice('RTX');
+      else if(/^[1-9]$/.test(k))selectModel(MODELS[+k-1]);
+      else if(k==='Enter'&&!onBtn&&G.pick){e.preventDefault();startSeance()}
+      break;
+    case 'seance':
+      if((k===' '||k==='Enter')&&!onBtn){e.preventDefault();G.skip&&G.skip()}
+      break;
+    case 'verdict':
+      if(k==='Enter'&&!onBtn){e.preventDefault();next()}
+      break;
+    case 'end':
+      if(k==='Enter'&&!onBtn){e.preventDefault();newGame()}
+      break;
+  }
+});
+
+function toggleMute(){
+  SFX.on=!SFX.on;store.set(MKEY,!SFX.on);if(!SFX.on)SFX.stopMusic();
+  $('#muteTxt').textContent=SFX.on?'SOUND ON':'SOUND OFF';$('#btnMute').setAttribute('aria-pressed',String(!SFX.on));
+}
+function toggleFull(){
+  const d=document;
+  if(!d.fullscreenElement){const p=d.documentElement.requestFullscreen&&d.documentElement.requestFullscreen();p&&p.catch&&p.catch(()=>{})}
+  else if(d.exitFullscreen)d.exitFullscreen();
+}
+
+/* buttons */
+$('#btnStart').addEventListener('click',newGame);
+$('#btnAuto').addEventListener('click',()=>startAutopilot(false));
+$('#btnRun').addEventListener('click',()=>startSeance());
+$('#btnSkip').addEventListener('click',()=>G.skip&&G.skip());
+$('#btnNext').addEventListener('click',next);
+$('#btnAgain').addEventListener('click',newGame);
+$('#brand').addEventListener('click',()=>{if(G.screen!=='title'){G.score=0;G.results=[];go('title')}});
+$('#btnMute').addEventListener('click',toggleMute);
+$('#btnFull').addEventListener('click',toggleFull);
+if(!document.documentElement.requestFullscreen)$('#btnFull').hidden=true;
+$('#eForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=($('#eName').value||'').replace(/[^\p{L}\p{N} ._-]/gu,'').trim().slice(0,12).toUpperCase()||'ANON';
+  const t=Date.now(),b=board();b.push({n:name,s:G.score,t});b.sort((a,c)=>c.s-a.s);store.set(BKEY,b.slice(0,50));
+  G.saved=t;renderBoard($('#eBoard'),8,t);$('#eForm').hidden=true;$('#eSaved').hidden=false;SFX.good();
+  $('#btnAgain').focus({preventScroll:true});
+});
+$('#eReset').addEventListener('click',()=>{
+  if(confirm('Clear the leaderboard on this machine?')){store.set(BKEY,[]);renderBoard($('#eBoard'),8,null)}
+});
+
+/* idle: attract mode on the title screen, and abandoned games return to the title */
+setInterval(()=>{
+  if(ap.on)return;
+  const idle=performance.now()-lastInput;
+  if(G.screen==='title'&&idle>45000)startAutopilot(true);
+  else if(G.screen!=='title'&&idle>120000){G.score=0;G.results=[];go('title')}
+},1000);
+
+/* boot */
+$('#muteTxt').textContent=SFX.on?'SOUND ON':'SOUND OFF';$('#btnMute').setAttribute('aria-pressed',String(!SFX.on));
+buildPicks();go('title');
+</script>
+</body>
+</html>
